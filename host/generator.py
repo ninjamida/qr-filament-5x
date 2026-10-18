@@ -6,7 +6,7 @@ PREFIX = "QRF"
 
 def main():
     generate_list = []
-    box_size = 10
+    box_size = 5
     border_size = 4
     font_size = -1
     version = None
@@ -38,7 +38,32 @@ def main():
                     error_correction = qrcode.constants.ERROR_CORRECT_H
             if arg == '-stock':
                 wildcard_materials += ["PLA", "PETG", "SILK", "PLA-CF", "PETG-CF", "ABS", "TPU"]
-                wildcard_colors += ["FFFFFF", "FEF043", "DCF478", "0ACC38", "067749", "0C6283", "0DE2A0", "75D9F3", "45A8F9", "2750E0", "46328E", "A03CF7", "F330F9", "D4B0DC", "F95D73", "F72224", "7C4B00", "F98D33", "FDEBD5", "D3C4A3", "AF7836", "898989", "BCBCBC", "161616"]
+                wildcard_colors += [
+                    "FFFFFF#White",
+                    "FEF043#Bright Yellow",
+                    "DCF478#Light Green",
+                    "0ACC38#Green",
+                    "067749#Dark Green",
+                    "0C6283#Cyan",
+                    "0DE2A0#Turquoise",
+                    "75D9F3#Light Blue",
+                    "45A8F9#Blue",
+                    "2750E0#Dark Blue",
+                    "46328E#Purple",
+                    "A03CF7#Bright Purple",
+                    "F330F9#Magenta",
+                    "D4B0DC#Lilac",
+                    "F95D73#Pink",
+                    "F72224#Red",
+                    "7C4B00#Brown",
+                    "F98D33#Orange",
+                    "FDEBD5#Beige",
+                    "D3C4A3#Light Brown",
+                    "AF7836#Terracotta",
+                    "898989#Gray",
+                    "BCBCBC#Light Gray",
+                    "161616#Black"
+                    ]
                 generate_list = []
                 stock_mode = True
                 break
@@ -68,24 +93,25 @@ def main():
         font_size = box_size * 4
 
     for data in generate_list:
+        split = data.split(':')
         qr = qrcode.QRCode(box_size=box_size, border=border_size, error_correction=error_correction, version=version)
-        qr.add_data(PREFIX + ':' + data)
+        qr.add_data(PREFIX + ':' + split[0] + ':' + split[1][:6])
         qr.make(fit=True)
         img = qr.make_image().convert("RGB")
-        split = data.split(':')
         mod_img = add_label_to_image(img, split[0], split[1], font_size)
-        mod_img.save(data.replace(':', '-') + '.png')
+        mod_img.save(split[0] + '-' + split[1][:6] + '.png')
 
 def add_label_to_image(img, material, color_raw, font_size):
     color = (int(color_raw[0:2], 16), int(color_raw[2:4], 16), int(color_raw[4:6], 16))
-    if (color[0] >= 128 or color[1] >= 128 or color[2] >= 128 or (color[0] + color[1] + color[2]) >= 256):
+    grayscale = (0.2126 * color[0]) + (0.7152 * color[1]) + (0.0722 * color[2])
+    if grayscale >= 128:
         text_color = (0, 0, 0)
     else:
         text_color = (255, 255, 255)
-    if (color[0] >= 48 or color[1] >= 48 or color[2] >= 48 or (color[0] + color[1] + color[2]) >= 96):
+    if grayscale >= 64:
         box_outline_color = (0, 0, 0)
     else:
-        box_outline_color = (64, 64, 64)
+        box_outline_color = (128, 128, 128)
 
     orig_width, orig_height = img.size
     text_area_height = font_size * 3
@@ -97,8 +123,11 @@ def add_label_to_image(img, material, color_raw, font_size):
     draw.rectangle([12, orig_height + 12, orig_width, orig_height + text_area_height], fill=color)
     font = ImageFont.truetype("arial.ttf", font_size)
 
-    box_text = material + '\n' + '#' + color_raw
-
+    box_text = material + '\n'
+    if len(color_raw) == 6:
+        box_text += '#' + color_raw[:6]
+    else:
+        box_text += color_raw[7:]
     text_bbox = draw.multiline_textbbox((0, 0), box_text, font=font)
     text_width = text_bbox[2] - text_bbox[0]
     text_height = text_bbox[3] - text_bbox[1]
