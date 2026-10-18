@@ -99,7 +99,10 @@ def main():
         qr.make(fit=True)
         img = qr.make_image().convert("RGB")
         mod_img = add_label_to_image(img, split[0], split[1], font_size)
-        mod_img.save(split[0] + '-' + split[1][:6] + '.png')
+        if len(split[1]) > 6:
+            mod_img.save(split[0] + '-' + split[1][7:].replace(' ', '') + '.png')
+        else:
+            mod_img.save(split[0] + '-' + split[1][:6] + '.png')
 
 def add_label_to_image(img, material, color_raw, font_size):
     color = (int(color_raw[0:2], 16), int(color_raw[2:4], 16), int(color_raw[4:6], 16))
