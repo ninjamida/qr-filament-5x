@@ -1,10 +1,36 @@
 import qrcode
 import sys
 from PIL import Image, ImageDraw, ImageFont
+from pathlib import Path
 
 PREFIX = "QRF"
+VALID_MATERIALS = []
+
+def load_config():
+    global PREFIX, VALID_MATERIALS
+    
+    if Path('qr_filament.ini').is_file():
+        with open('qr_filament.ini', 'r') as f:
+            lines = f.readlines()
+        for line in lines:
+            line = line.strip()
+            if line.startswith('#'):
+                continue
+            split = line.split('=', 1)
+            if len(split) < 2:
+                continue
+                
+            keyword = split[0].upper()
+            if keyword == 'PREFIX':
+                PREFIX = split[1]
+                
+            if keyword == 'VALID_MATERIALS':
+                if len(split[1].strip()) > 0:
+                    VALID_MATERIALS = split[1].strip().split(',')
 
 def main():
+    load_config()
+    
     generate_list = []
     box_size = 5
     border_size = 4
@@ -37,7 +63,10 @@ def main():
                 elif error_correction_id == 'H':
                     error_correction = qrcode.constants.ERROR_CORRECT_H
             if arg == '-stock':
-                wildcard_materials += ["PLA", "PETG", "SILK", "PLA-CF", "PETG-CF", "ABS", "TPU"]
+                if len(VALID_MATERIALS) == 0:
+                    wildcard_materials += ["PLA", "PETG", "SILK", "PLA-CF", "PETG-CF", "ABS", "TPU"]
+                else:
+                    wildcard_materials += VALID_MATERIALS
                 wildcard_colors += [
                     "FFFFFF#White",
                     "FEF043#Bright Yellow",
@@ -84,6 +113,9 @@ def main():
                 wildcard_materials += [arg_split[0]]
             else:
                 generate_list += [arg]
+                
+    if len(wildcard_materials) == 0:
+        wildcard_materials = VALID_MATERIALS
 
     for material in wildcard_materials:
         for color in wildcard_colors:
