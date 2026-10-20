@@ -63,10 +63,7 @@ def main():
                 elif error_correction_id == 'H':
                     error_correction = qrcode.constants.ERROR_CORRECT_H
             if arg == '-stock':
-                if len(VALID_MATERIALS) == 0:
-                    wildcard_materials += ["PLA", "PETG", "SILK", "PLA-CF", "PETG-CF", "ABS", "TPU"]
-                else:
-                    wildcard_materials += VALID_MATERIALS
+                wildcard_materials += ["PLA", "PETG", "SILK", "PLA-CF", "PETG-CF", "ABS", "TPU"]
                 wildcard_colors += [
                     "FFFFFF#White",
                     "FEF043#Bright Yellow",
@@ -127,7 +124,10 @@ def main():
     for data in generate_list:
         split = data.split(':')
         qr = qrcode.QRCode(box_size=box_size, border=border_size, error_correction=error_correction, version=version)
-        qr.add_data(PREFIX + ':' + split[0] + ':' + split[1][:6])
+        if PREFIX:
+            qr.add_data(PREFIX + ':' + split[0] + ':' + split[1][:6])
+        else:
+            qr.add_data(split[0] + ':' + split[1][:6])
         qr.make(fit=True)
         img = qr.make_image().convert("RGB")
         mod_img = add_label_to_image(img, split[0], split[1], font_size)
