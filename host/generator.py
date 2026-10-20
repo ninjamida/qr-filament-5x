@@ -1,10 +1,36 @@
 import qrcode
 import sys
 from PIL import Image, ImageDraw, ImageFont
+from pathlib import Path
 
 PREFIX = "QRF"
+VALID_MATERIALS = []
+
+def load_config():
+    global PREFIX, VALID_MATERIALS
+    
+    if Path('qr_filament.ini').is_file():
+        with open('qr_filament.ini', 'r') as f:
+            lines = f.readlines()
+        for line in lines:
+            line = line.strip()
+            if line.startswith('#'):
+                continue
+            split = line.split('=', 1)
+            if len(split) < 2:
+                continue
+                
+            keyword = split[0].upper()
+            if keyword == 'PREFIX':
+                PREFIX = split[1]
+                
+            if keyword == 'VALID_MATERIALS':
+                if len(split[1].strip()) > 0:
+                    VALID_MATERIALS = split[1].strip().split(',')
 
 def main():
+    load_config()
+    
     generate_list = []
     box_size = 5
     border_size = 4
@@ -84,6 +110,9 @@ def main():
                 wildcard_materials += [arg_split[0]]
             else:
                 generate_list += [arg]
+                
+    if len(wildcard_materials) == 0:
+        wildcard_materials = VALID_MATERIALS
 
     for material in wildcard_materials:
         for color in wildcard_colors:
@@ -95,7 +124,10 @@ def main():
     for data in generate_list:
         split = data.split(':')
         qr = qrcode.QRCode(box_size=box_size, border=border_size, error_correction=error_correction, version=version)
-        qr.add_data(PREFIX + ':' + split[0] + ':' + split[1][:6])
+        if PREFIX:
+            qr.add_data(PREFIX + ':' + split[0] + ':' + split[1][:6])
+        else:
+            qr.add_data(split[0] + ':' + split[1][:6])
         qr.make(fit=True)
         img = qr.make_image().convert("RGB")
         mod_img = add_label_to_image(img, split[0], split[1], font_size)
